@@ -12,7 +12,8 @@ final case class Secret(value: String) extends AnyVal {
 }
 
 object Secret {
-  implicit val secretConfigReader: ConfigReader[Secret] = ConfigReader[String].map(n => new Secret(n))
+  implicit val secretConfigReader: ConfigReader[Secret] =
+    ConfigReader[String].map(n => new Secret(n))
 }
 
 case class JdbcConfig(
@@ -24,7 +25,6 @@ case class JdbcConfig(
 )
 
 object JdbcConfig {
-  type ParallelConnections = Int Refined Positive
   type QueryTimeout = FiniteDuration
   type PoolSize = Int Refined Positive
 }

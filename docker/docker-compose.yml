@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  oracle:
+    platform: "linux/x86_64"
+    image: gvenzl/oracle-xe:slim
+    container_name: oracle
+    environment:
+      - ORACLE_PASSWORD=Admin123
+      - ORACLE_DATABASE=ORCLPDB1
+    ports:
+      - 1521:1521
+    volumes:
+      - ./startup_script:/docker-entrypoint-startdb.d
