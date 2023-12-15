@@ -5,10 +5,33 @@ on: [pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Create Oracle container
+        run: |
+          podman run -d --name oracle \
+                     -p 1521:1521 \
+                     -e ORACLE_PASSWORD=Admin123 \
+                     -e ORACLE_DATABASE=ORCLPDB1 \
+                     -v ${{ github.workspace }}/docker/startup_script/:/docker-entrypoint-startdb.d \
+                     gvenzl/oracle-xe:slim
+
+      - name: Oracle Container Healthcheck
+        run: |
+          countdown=10
+          while [ $countdown -gt 0 ]; do
+            ((countdown--))
+            if podman logs oracle 2>&1 | grep -q "DATABASE IS READY TO USE!"; then
+                exit 0
+            else
+              sleep 10s;
+            fi;
+            if [ $countdown -lt 1 ]; then
+                exit 1
+            fi;
+          done
 
       - name: Set up JDK
         uses: actions/setup-java@v1
