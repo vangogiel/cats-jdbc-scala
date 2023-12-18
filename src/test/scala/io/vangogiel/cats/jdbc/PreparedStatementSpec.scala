@@ -22,13 +22,12 @@ class PreparedStatementSpec
   }
 
   "prepared statement" should {
+    implicit val connection: Connection = JdbcConnection.create(config)
+    implicit val queryTimeout: QueryTimeout = config.queryTimeout
+    val dummyRepository = new TestRepository[IO](blocker)
     val sampleUser = User(1, "John", "Smith")
 
     "properly perform insert and query returning mapped result" in {
-      implicit val connection: Connection = JdbcConnection.create(config)
-      implicit val queryTimeout: QueryTimeout = config.queryTimeout
-      val dummyRepository = new TestRepository[IO](blocker)
-
       val actual = for {
         _ <- dummyRepository.insertUser(sampleUser)
         retrievedUser <- dummyRepository.findUser(sampleUser.id)
@@ -37,15 +36,18 @@ class PreparedStatementSpec
     }
 
     "properly perform insert using interpolation and query returning mapped result" in {
-      implicit val connection: Connection = JdbcConnection.create(config)
-      implicit val queryTimeout: QueryTimeout = config.queryTimeout
-      val dummyRepository = new TestRepository[IO](blocker)
-
       val actual = for {
         _ <- dummyRepository.insertUserUsingStringInterpolation(sampleUser)
         retrievedUser <- dummyRepository.findUser(sampleUser.id)
       } yield retrievedUser
       actual.map(result => result shouldBe Some(sampleUser)).unsafeRunSync()
+    }
+
+    "properly prepare and execute insert returning column value" in {
+      val actual = for {
+        name <- dummyRepository.insertReturningName(sampleUser)
+      } yield name
+      actual.map(result => result shouldBe "John").unsafeRunSync()
     }
   }
 }

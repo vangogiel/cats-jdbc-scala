@@ -34,6 +34,18 @@ class TestRepository[F[_]: Async](blocker: Blocker)(implicit
         statement.performUpdate(blocker)
       }
 
+  def insertReturningName(user: User): F[String] =
+    s"""INSERT
+       | INTO SAMPLE_USER.USERS (ID, NAME, SURNAME)
+       | VALUES (${user.id}, '${user.name}', '${user.surname}')
+       """.stripMargin
+      .prepareInsert(Seq("name")) { statement =>
+        statement.performUpdate[F, String](blocker) { rs =>
+          rs.next()
+          rs.getString(1)
+        }
+      }
+
   def findUser(id: Long): F[Option[User]] =
     selectUser.prepare { statement =>
       statement.setLong(1, id)
