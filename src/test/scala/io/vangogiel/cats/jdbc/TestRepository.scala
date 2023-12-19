@@ -46,6 +46,18 @@ class TestRepository[F[_]: Async](blocker: Blocker)(implicit
         }
       }
 
+  def insertBatch(users: Seq[User]): F[Seq[Int]] =
+    insertUser
+      .prepare { statement =>
+        for (user <- users) {
+          statement.setLong(1, user.id)
+          statement.setString(2, user.name)
+          statement.setString(3, user.surname)
+          statement.addBatch()
+        }
+        statement.performBatch(blocker)
+      }
+
   def findUser(id: Long): F[Option[User]] =
     selectUser.prepare { statement =>
       statement.setLong(1, id)

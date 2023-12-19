@@ -49,5 +49,18 @@ class PreparedStatementSpec
       } yield name
       actual.map(result => result shouldBe "John").unsafeRunSync()
     }
+
+    "properly prepare and execute a batch" in {
+      val sampleUserA = User(5, "John", "Smith")
+      val sampleUserB = User(6, "John", "Smith")
+      val expected = Seq(Some(sampleUserA), Some(sampleUserB))
+      val actual = for {
+        _ <- dummyRepository.insertBatch(Seq(User(5, "John", "Smith"), User(6, "John", "Smith")))
+        userA <- dummyRepository.findUser(5)
+        userB <- dummyRepository.findUser(6)
+        actual = Seq(userA, userB)
+      } yield actual
+      actual.unsafeRunSync() shouldBe expected
+    }
   }
 }
