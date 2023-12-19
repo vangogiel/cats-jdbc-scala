@@ -3,7 +3,12 @@ package io.vangogiel.cats.jdbc
 import cats.effect.implicits.catsEffectSyntaxBracket
 import cats.effect.{ Async, Blocker, ContextShift, Resource }
 import cats.implicits.toFlatMapOps
-import io.vangogiel.cats.jdbc.Assembler.{ make, makeExecuteQuery, makeExecuteUpdate }
+import io.vangogiel.cats.jdbc.Assembler.{
+  make,
+  makeExecuteBatch,
+  makeExecuteQuery,
+  makeExecuteUpdate
+}
 import io.vangogiel.cats.jdbc.JdbcConfig.QueryTimeout
 
 import java.sql.{ Connection, PreparedStatement, ResultSet }
@@ -47,6 +52,11 @@ object implicits {
         st.executeUpdate()
         st.getGeneratedKeys
       }(f)
+
+    def performBatch[F[_]: Async](b: Blocker)(implicit cs: ContextShift[F]): F[Seq[Int]] =
+      makeExecuteBatch(b, s) { st =>
+        st.executeBatch()
+      }(_.toSeq)
   }
 }
 
@@ -58,6 +68,13 @@ object Assembler {
   ): F[A] =
     makeGuarantee(b, s)(st =>
       b.blockOn(Async[F].delay(f1(st))).flatMap(rs => Async[F].delay(f2(rs)))
+    )
+
+  def makeExecuteBatch[F[_]: Async](b: Blocker, s: PreparedStatement)(
+      f1: PreparedStatement => Array[Int]
+  )(f2: Array[Int] => Seq[Int])(implicit cs: ContextShift[F]): F[Seq[Int]] =
+    makeGuarantee(b, s)(st => b.blockOn(Async[F].delay(f1(st)))).flatMap(rs =>
+      Async[F].delay(f2(rs))
     )
 
   def makeExecuteUpdate[F[_]: Async](b: Blocker, s: PreparedStatement)(implicit
