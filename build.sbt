@@ -27,3 +27,5 @@ commands ++= Seq(ciBuild, devBuild)
 
 scalafmtOnCompile := true
 scalafmtConfig := file(".scalafmt.conf")
+coverageFailOnMinimum := true
+coverageMinimumStmtTotal := 100
